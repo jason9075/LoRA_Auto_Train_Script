@@ -49,7 +49,6 @@ accelerate launch --num_cpu_threads_per_process="$num_cpu_threads_per_process" \
 --num_processes=1 \
 --num_machines=1 \
 --mixed_precision="no" \
---dynamo_backend="no" \
 "train_network.py" \
 --pretrained_model_name_or_path="$pretrained_model_name_or_path" \
 --train_data_dir="$train_data_dir" \
@@ -80,5 +79,8 @@ accelerate launch --num_cpu_threads_per_process="$num_cpu_threads_per_process" \
 --xformers \
 --bucket_no_upscale
 
+# remove down blocks weights
 cd -
-scp model/AutoTrainFace.safetensors pop:/home/jason/stable-diffusion-webui/models/Lora/ 
+python remove_down_blocks_weights.py "$output_dir"
+
+# scp model/AutoTrainFace.safetensors pop:/home/jason/stable-diffusion-webui/models/Lora/ 
