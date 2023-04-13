@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# IDEs / editors
+.idea/
+.vscode/
+*.pyc
+*.bak
+*.swp
+
+# System
+.DS_Store
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+
+train_image/1_face/**
+!train_image/1_face/.keep
+
+person/**
+!person/.keep
+
+origin_image/**
+!origin_image/.keep
+
+origin_video/**
+!origin_video/.keep
+
+model/**
+!model/.keep
+
+log/**
+!log/.keep
