@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# TRAIN_SCRIPT_PATH=~/LoRA_Easy_Training_Scripts/sd_scripts/
+TRAIN_SCRIPT_PATH=~/kohya_ss-linux/
+TRAIN_DATA_PATH=~/LoRA_Auto_Train_Script
 max_train_steps=1250
 num_ckpts=5
 
@@ -43,7 +46,7 @@ noise_offset=$(jq -r '.noise_offset' config.json)
 # calculate save_every_n_epochs 
 save_every_n_epochs=$((max_train_steps / image_count / num_ckpts))
 
-cd ~/projects/kohya_ss-linux/
+cd $TRAIN_SCRIPT_PATH
 
 accelerate launch --num_cpu_threads_per_process="$num_cpu_threads_per_process" \
 --num_processes=1 \
@@ -51,10 +54,10 @@ accelerate launch --num_cpu_threads_per_process="$num_cpu_threads_per_process" \
 --mixed_precision="no" \
 "train_network.py" \
 --pretrained_model_name_or_path="$pretrained_model_name_or_path" \
---train_data_dir="$train_data_dir" \
+--train_data_dir="$TRAIN_DATA_PATH/$train_data_dir" \
 --resolution="$max_resolution" \
---output_dir="$output_dir" \
---logging_dir="$logging_dir" \
+--output_dir="$TRAIN_DATA_PATH/$output_dir" \
+--logging_dir="$TRAIN_DATA_PATH/$logging_dir" \
 --network_alpha="$network_alpha" \
 --save_model_as="$save_model_as" \
 --network_module="networks.lora" \

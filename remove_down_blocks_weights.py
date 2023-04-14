@@ -7,7 +7,7 @@ import argparse
 parser = argparse.ArgumentParser()
 # args for model folder
 parser.add_argument(
-    "model_dir", type=str, default="/home/jason9075/projects/lora_auto_train/model/"
+    "model_dir", type=str, default="~/lora_auto_train/model/"
 )
 args = parser.parse_args()
 

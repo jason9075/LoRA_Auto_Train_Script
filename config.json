@@ -1,9 +1,9 @@
 {
   "output_name": "AutoTrainFace",
-  "pretrained_model_name_or_path": "runwayml/stable-diffusion-v1-5",
-  "train_data_dir": "/home/jason9075/projects/lora_auto_train/train_image",
-  "output_dir": "/home/jason9075/projects/lora_auto_train/model",
-  "logging_dir": "/home/jason9075/projects/lora_auto_train/log",
+  "pretrained_model_name_or_path": "/home/jason9075/ckpt_model/v1-5-pruned-emaonly.safetensors",
+  "train_data_dir": "train_image",
+  "output_dir": "model",
+  "logging_dir": "log",
   "reg_data_dir": "",
   "unet_lr": "0.0006",
   "text_encoder_lr": "0.00005",
