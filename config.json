@@ -1,6 +1,6 @@
 {
   "output_name": "AutoTrainFace",
-  "pretrained_model_name_or_path": "/home/jason9075/ckpt_model/v1-5-pruned-emaonly.safetensors",
+  "pretrained_model_name_or_path": "runwayml/stable-diffusion-v1-5",
   "train_data_dir": "train_image",
   "output_dir": "model",
   "logging_dir": "log",
@@ -10,8 +10,8 @@
   "network_dim": 64,
   "network_alpha": 4,
   "save_model_as": "safetensors",
-  "train_batch_size": 1,
-  "optimizer": "AdamW8bit",
+  "train_batch_size": 4,
+  "optimizer": "AdamW",
   "use_8bit_adam": false,
   "max_resolution": "512,512",
   "full_fp16": false,
