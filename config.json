@@ -10,7 +10,7 @@
   "network_dim": 64,
   "network_alpha": 4,
   "save_model_as": "safetensors",
-  "train_batch_size": 4,
+  "train_batch_size": 8,
   "optimizer": "AdamW",
   "use_8bit_adam": false,
   "max_resolution": "512,512",

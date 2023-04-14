@@ -52,7 +52,9 @@ optimizer_args=$(jq -r '.optimizer_args' config.json)
 noise_offset=$(jq -r '.noise_offset' config.json)
 
 # calculate save_every_n_epochs 
-save_every_n_epochs=$((max_train_steps / image_count / num_ckpts))
+max_train_steps=$((max_train_steps / train_batch_size))
+image_per_steps=$((image_count / train_batch_size))
+save_every_n_epochs=$((max_train_steps / image_per_steps / num_ckpts))
 
 cd $TRAIN_SCRIPT_PATH
 
