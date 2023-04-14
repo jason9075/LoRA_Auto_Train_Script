@@ -7,6 +7,14 @@ max_train_steps=1250
 num_ckpts=5
 
 image_count=$(ls ./train_image/1_face/*.jpg 2>/dev/null | wc -l)
+
+if [ "$image_count" -eq 0 ]; then
+    echo "Gen Faces."
+    python gen_face.py
+fi
+
+image_count=$(ls ./train_image/1_face/*.jpg 2>/dev/null | wc -l)
+
 # 讀取JSON文件中的設置
 pretrained_model_name_or_path=$(jq -r '.pretrained_model_name_or_path' config.json)
 logging_dir=$(jq -r '.logging_dir' config.json)
