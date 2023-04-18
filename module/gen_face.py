@@ -1,7 +1,12 @@
 import numpy as np
+import os
 import glob
 import mediapipe as mp
 import cv2
+from torch import conj
+import logging
+
+logger = logging.getLogger()
 
 BACKGROUND_COLOR = (255, 255, 255)
 FACE_NAME = "MY_NAME"
@@ -11,18 +16,24 @@ TARGET_SIZE = (512, 512)
 KERNEL = np.ones((16, 16), np.uint8)
 
 
-def main():
-    mp_face_detection = mp.solutions.face_detection.FaceDetection()
-    mp_drawing = mp.solutions.drawing_utils
-    mp_face_mesh = mp.solutions.face_mesh.FaceMesh()
+mp_face_detection = mp.solutions.face_detection.FaceDetection()
+mp_drawing = mp.solutions.drawing_utils
+mp_face_mesh = mp.solutions.face_mesh.FaceMesh()
 
-    # Load image folder
-    image_paths = glob.glob("origin_image/*.jpg")
-    image_paths += glob.glob("origin_image/*.png")
+
+def gen_face(source_dir, target_dir, trigger_word=FACE_NAME):
+    # create 1_face folder under target_dir
+    face_dir = os.path.join(target_dir, "1_face")
+    if not os.path.exists(face_dir):
+        os.makedirs(face_dir)
 
     index = 0
-    for image_path in image_paths:
-        print(f"Processing {image_path}...")
+    ext_type = (".png", ".jpg", ".jpeg")
+    no_face_files = []
+    more_than_one_face_files = []
+    for image_path in glob.glob(os.path.join(source_dir, "*")):
+        if not image_path.lower().endswith(ext_type):
+            continue
 
         # find face
         image = cv2.imread(image_path)
@@ -39,11 +50,13 @@ def main():
         results = mp_face_detection.process(image)
 
         if results.detections is None:
-            print(f"No face detected:{image_path}")
+            logger.info(f"No face detected:{image_path}")
+            no_face_files.append(image_path)
             continue
 
         if len(results.detections) > 1:
-            print(f"More than one face detected:{image_path}")
+            logger.info(f"More than one face detected:{image_path}")
+            more_than_one_face_files.append(image_path)
             continue
 
         detection = results.detections[0]
@@ -100,7 +113,7 @@ def main():
         # mask out of face area
         results_mesh = mp_face_mesh.process(landmark_image)
         if results_mesh.multi_face_landmarks is None:
-            print(f"No landmark detected:{image_path}")
+            logger.info(f"No landmark detected:{image_path}")
             continue
 
         for face_landmarks in results_mesh.multi_face_landmarks:
@@ -123,38 +136,19 @@ def main():
             image[mask == 0] = BACKGROUND_COLOR
 
         image = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
-        """ # calculate face portion of width """
-        """ h, w, _ = image.shape """
-        """ face_width = xmax - xmin """
-        """ portion = face_width / w """
-        """ scale = 0.15 / portion """
-        """ tiny_face = cv2.resize(image, (0, 0), fx=scale, fy=scale) """
-        """ # gen same shape white image """
-        """ white_image = np.ones(image.shape, dtype=np.uint8) * 255 """
-        """ # paste tiny face to white image """
-        """ start_x = int(0.4 * w) """
-        """ start_y = int(0.15 * h) """
-        """ white_image[ """
-        """     start_y : start_y + tiny_face.shape[0], """
-        """     start_x : start_x + tiny_face.shape[1], """
-        """     :, """
-        """ ] = tiny_face """
 
         image = cv2.resize(image, TARGET_SIZE)
-        cv2.imwrite("train_image/1_face/{}.jpg".format(index), image)
-        path = "train_image/1_face/{}.txt".format(index)
+        cv2.imwrite(os.path.join(face_dir, f"{index}.jpg"), image)
+        path = os.path.join(face_dir, f"{index}.txt")
         with open(path, "w") as f:
-            f.write(f"{FACE_NAME}, a person with {FACE_NAME} face, white background")
+            f.write(f"a person with {trigger_word} face, white background")
 
-        # still blurry
-        """ # gen far away face """
-        """ image = cv2.resize(white_image, TARGET_SIZE) """
-        """ cv2.imwrite("train_image/1_face/{}_far.jpg".format(index), image) """
-        """ path = "train_image/1_face/{}_far.txt".format(index) """
-        """ with open(path, "w") as f: """
-        """     f.write(f"a far photo of {FACE_NAME} face, white background") """
         index += 1
+
+    logger.info(
+        f"Gen {index} faces, no face: {no_face_files}, more than one face: {more_than_one_face_files}"
+    )
 
 
 if __name__ == "__main__":
-    main()
+    gen_face("origin_image", "train_image")

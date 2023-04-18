@@ -2,14 +2,10 @@ from safetensors.torch import load_file, save_file
 import os
 import torch
 import argparse
+import logging
 
+logger = logging.getLogger()
 
-parser = argparse.ArgumentParser()
-# args for model folder
-parser.add_argument(
-    "model_dir", type=str, default="~/lora_auto_train/model/"
-)
-args = parser.parse_args()
 
 prefix_keys = [
     #    "lora_te_text_model_encoder_layers",
@@ -32,14 +28,14 @@ prefix_keys = [
 ]
 
 
-def main():
-    file_list = os.listdir(args.model_dir)
+def remove(target_path):
+    file_list = os.listdir(target_path)
     file_list = [f for f in file_list if f.endswith(".safetensors")]
 
     # remove weights of down blocks
+    logger.info(f"Remove Blocks Weight for {file_list}.")
     for file in file_list:
-        print(f"Processing {file}")
-        model_file = os.path.join(args.model_dir, file)
+        model_file = os.path.join(target_path, file)
         weights = load_file(model_file)
         for key in weights.keys():
             if any([key.startswith(prefix_key) for prefix_key in prefix_keys]):
@@ -48,4 +44,8 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    parser = argparse.ArgumentParser()
+    # args for model folder
+    parser.add_argument("model_dir", type=str, default="~/lora_auto_train/model/")
+    args = parser.parse_args()
+    remove(args.model_dir)

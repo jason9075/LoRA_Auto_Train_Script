@@ -34,8 +34,18 @@ origin_image/**
 origin_video/**
 !origin_video/.keep
 
-model/**
-!model/.keep
+output/model/**
+!output/model/.keep
+
+output/sample/**
+!output/sample/.keep
 
 log/**
 !log/.keep
+
+tmp/**
+!tmp/.keep
+
+key/**
+
+.env

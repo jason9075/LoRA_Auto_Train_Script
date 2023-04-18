@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # TRAIN_SCRIPT_PATH=~/LoRA_Easy_Training_Scripts/sd_scripts/
-TRAIN_SCRIPT_PATH=~/kohya_ss-linux/
-TRAIN_DATA_PATH=~/LoRA_Auto_Train_Script
+TRAIN_SCRIPT_PATH=~/projects/kohya_ss-linux/
+TRAIN_DATA_PATH=~/projects/LoRA_Auto_Train_Script
 max_train_steps=1250
 num_ckpts=5
 
@@ -10,46 +10,47 @@ image_count=$(ls ./train_image/1_face/*.jpg 2>/dev/null | wc -l)
 
 if [ "$image_count" -eq 0 ]; then
     echo "Gen Faces."
-    python gen_face.py
+    python module/gen_face.py
 fi
 
 image_count=$(ls ./train_image/1_face/*.jpg 2>/dev/null | wc -l)
 
+CONFIG_PATH=./config/face_old.config
 # 讀取JSON文件中的設置
-pretrained_model_name_or_path=$(jq -r '.pretrained_model_name_or_path' config.json)
-logging_dir=$(jq -r '.logging_dir' config.json)
-train_data_dir=$(jq -r '.train_data_dir' config.json)
-reg_data_dir=$(jq -r '.reg_data_dir' config.json)
-output_dir=$(jq -r '.output_dir' config.json)
-max_resolution=$(jq -r '.max_resolution' config.json)
-learning_rate=$(jq -r '.learning_rate' config.json)
-lr_scheduler=$(jq -r '.lr_scheduler' config.json)
-lr_warmup=$(jq -r '.lr_warmup' config.json)
-train_batch_size=$(jq -r '.train_batch_size' config.json)
-mixed_precision=$(jq -r '.mixed_precision' config.json)
-save_precision=$(jq -r '.save_precision' config.json)
-seed=$(jq -r '.seed' config.json)
-num_cpu_threads_per_process=$(jq -r '.num_cpu_threads_per_process' config.json)
-caption_extension=$(jq -r '.caption_extension' config.json)
-full_fp16=$(jq -r '.full_fp16' config.json)
-no_token_padding=$(jq -r '.no_token_padding' config.json)
-stop_text_encoder_training=$(jq -r '.stop_text_encoder_training' config.json)
-save_model_as=$(jq -r '.save_model_as' config.json)
-save_state=$(jq -r '.save_state' config.json)
-resume=$(jq -r '.resume' config.json)
-text_encoder_lr=$(jq -r '.text_encoder_lr' config.json)
-unet_lr=$(jq -r '.unet_lr' config.json)
-network_dim=$(jq -r '.network_dim' config.json)
-output_name=$(jq -r '.output_name' config.json)
-max_data_loader_n_workers=$(jq -r '.max_data_loader_n_workers' config.json)
-network_alpha=$(jq -r '.network_alpha' config.json)
-training_comment=$(jq -r '.training_comment' config.json)
-lr_scheduler_num_cycles=$(jq -r '.lr_scheduler_num_cycles' config.json)
-lr_scheduler_power=$(jq -r '.lr_scheduler_power' config.json)
-persistent_data_loader_workers=$(jq -r '.persistent_data_loader_workers' config.json)
-optimizer=$(jq -r '.optimizer' config.json)
-optimizer_args=$(jq -r '.optimizer_args' config.json)
-noise_offset=$(jq -r '.noise_offset' config.json)
+pretrained_model_name_or_path=$(jq -r '.pretrained_model_name_or_path' $CONFIG_PATH)
+logging_dir=$(jq -r '.logging_dir' $CONFIG_PATH)
+train_data_dir=$(jq -r '.train_data_dir' $CONFIG_PATH)
+reg_data_dir=$(jq -r '.reg_data_dir' $CONFIG_PATH)
+output_dir=$(jq -r '.output_dir' $CONFIG_PATH)
+max_resolution=$(jq -r '.max_resolution' $CONFIG_PATH)
+learning_rate=$(jq -r '.learning_rate' $CONFIG_PATH)
+lr_scheduler=$(jq -r '.lr_scheduler' $CONFIG_PATH)
+lr_warmup=$(jq -r '.lr_warmup' $CONFIG_PATH)
+train_batch_size=$(jq -r '.train_batch_size' $CONFIG_PATH)
+mixed_precision=$(jq -r '.mixed_precision' $CONFIG_PATH)
+save_precision=$(jq -r '.save_precision' $CONFIG_PATH)
+seed=$(jq -r '.seed' $CONFIG_PATH)
+num_cpu_threads_per_process=$(jq -r '.num_cpu_threads_per_process' $CONFIG_PATH)
+caption_extension=$(jq -r '.caption_extension' $CONFIG_PATH)
+full_fp16=$(jq -r '.full_fp16' $CONFIG_PATH)
+no_token_padding=$(jq -r '.no_token_padding' $CONFIG_PATH)
+stop_text_encoder_training=$(jq -r '.stop_text_encoder_training' $CONFIG_PATH)
+save_model_as=$(jq -r '.save_model_as' $CONFIG_PATH)
+save_state=$(jq -r '.save_state' $CONFIG_PATH)
+resume=$(jq -r '.resume' $CONFIG_PATH)
+text_encoder_lr=$(jq -r '.text_encoder_lr' $CONFIG_PATH)
+unet_lr=$(jq -r '.unet_lr' $CONFIG_PATH)
+network_dim=$(jq -r '.network_dim' $CONFIG_PATH)
+output_name=$(jq -r '.output_name' $CONFIG_PATH)
+max_data_loader_n_workers=$(jq -r '.max_data_loader_n_workers' $CONFIG_PATH)
+network_alpha=$(jq -r '.network_alpha' $CONFIG_PATH)
+training_comment=$(jq -r '.training_comment' $CONFIG_PATH)
+lr_scheduler_num_cycles=$(jq -r '.lr_scheduler_num_cycles' $CONFIG_PATH)
+lr_scheduler_power=$(jq -r '.lr_scheduler_power' $CONFIG_PATH)
+persistent_data_loader_workers=$(jq -r '.persistent_data_loader_workers' $CONFIG_PATH)
+optimizer=$(jq -r '.optimizer' $CONFIG_PATH)
+optimizer_args=$(jq -r '.optimizer_args' $CONFIG_PATH)
+noise_offset=$(jq -r '.noise_offset' $CONFIG_PATH)
 
 # calculate save_every_n_epochs 
 max_train_steps=$((max_train_steps / train_batch_size))
@@ -94,6 +95,6 @@ accelerate launch --num_cpu_threads_per_process="$num_cpu_threads_per_process" \
 
 # remove down blocks weights
 cd -
-python remove_down_blocks_weights.py "$output_dir"
+python module/remove_down_blocks_weights.py "$output_dir"
 
 # scp model/AutoTrainFace.safetensors pop:/home/jason/stable-diffusion-webui/models/Lora/ 
