@@ -3,7 +3,9 @@ import glob
 import json
 import zipfile
 import timeit
-import shutil
+import sys
+import logging
+import time
 from concurrent.futures import TimeoutError
 from google.cloud import pubsub_v1
 from google.oauth2 import service_account
@@ -12,8 +14,11 @@ from module.gen_example import gen_example
 from module.gen_face import gen_face
 from module.train_lora import train
 from module.remove_down_blocks_weights import remove
-import logging
+from module.clean import clean_data
+from google.api_core import retry
+from dotenv import load_dotenv
 
+load_dotenv()
 # logger
 logger = logging.getLogger()
 logger.setLevel(logging.INFO)
@@ -30,8 +35,9 @@ project_id = "onyx-codex-383017"
 subscription_id = "TrainJob-sub"
 bucket_id = "lora-train-images"
 key_file = "onyx-codex-383017-1cd126f48131.json"
+sample_dir = os.path.join("output", "sample")
 # Number of seconds the subscriber should listen for messages
-timeout = 10.0
+WAIT_SEC = int(os.getenv("SUB_WAIT_SEC", 10))
 
 # global
 try:
@@ -44,6 +50,7 @@ except Exception as e:
     exit(1)
 
 subscriber = pubsub_v1.SubscriberClient(credentials=creds)
+subscription_path = subscriber.subscription_path(project_id, subscription_id)
 client = storage.Client.from_service_account_json(key_path)
 bucket = client.get_bucket(bucket_id)
 
@@ -51,50 +58,59 @@ bucket = client.get_bucket(bucket_id)
 def process_job(attr, msg_data):
     user_id = attr["user_id"]
     model_key = attr["model_key"]
+    model_name = attr["model_name"]
     trigger_word = attr["trigger_word"]
     category = attr["category"]
 
-    download_image_from_gcp(model_key, user_id)
-
-    # handle attr
-    config = handle_attr(user_id, model_key, trigger_word, category)
+    # handle config
+    config = handle_config_file(model_name, category)
     if config is None:
         logger.error(f"Not support category: {category}")
         return
 
-    # start traing job
+    logger.info(f"🔹Download {user_id}/{model_key} images.zip .")
+    download_image_from_gcp(model_key, user_id)
+
+    logger.info("🔹Start data augmentation")
+    if category == "face":
+        gen_face("origin_image", "train_image", trigger_word)
+
+    logger.info("🔹Start training job.")
     train(config)
 
-    # remove down blocks and weights
+    logger.info("🔹Remove down blocks and weights.")
     if category == "face":
         remove(config["output_dir"])
 
-    # generate some sample image
+    logger.info("🔹Generate sample image.")
     if category == "face":
-        sample_dir = os.path.join("output", "sample")
+        # deserialize json from msg_data
+        meta_data = json.loads(msg_data, encoding="utf-8")
+
         gen_example(
             config["output_dir"],
+            meta_data,
             config["output_name"],
             sample_dir,
             trigger_word,
         )
-        # upload sample image to gcp
-        upload_sample_image_to_gcp(user_id, model_key, sample_dir)
 
-    # zip output and log folder to gcp
+    logger.info("🔹Upload sample images to gcp.")
+    upload_sample_image_to_gcp(user_id, model_key)
     zip_and_upload_gcp(user_id, model_key, "output")
     zip_and_upload_gcp(user_id, model_key, "log")
 
-    # clean train image, model and log
+    logger.info("🔹Clean train image, model and log.")
     clean_data()
 
 
-def upload_sample_image_to_gcp(user_id, model_key, sample_dir):
+def upload_sample_image_to_gcp(user_id, model_key):
     logger.info("Upload sample images to gcp.")
-    for sample in glob.glob(os.path.join(sample_dir, "*.png")):
-        gcp_object = f"{user_id}/{model_key}/sample/{sample}"
+    for sample_path in glob.glob(os.path.join(sample_dir, "*.png")):
+        sample_name = os.path.basename(sample_path)
+        gcp_object = f"{user_id}/{model_key}/sample/{sample_name}"
         blob = bucket.blob(gcp_object)
-        blob.upload_from_filename(sample)
+        blob.upload_from_filename(sample_path)
 
 
 def zip_and_upload_gcp(user_id, model_key, target_folder):
@@ -115,80 +131,68 @@ def zip_and_upload_gcp(user_id, model_key, target_folder):
     blob.upload_from_filename(local_file)
 
 
-def clean_data():
-    logger.info("Clean data.")
-    # clean train_image only dir
-    for filepath in glob.glob(os.path.join("train_image", "*")):
-        if os.path.isdir(filepath):
-            shutil.rmtree(
-                filepath,
-            )
-
-    # clean origin image folder jpg and png
-    ext_type = (".png", ".jpg", ".jpeg")
-    for filepath in glob.glob(os.path.join("origin_image", "*")):
-        if filepath.lower().endswith(ext_type):
-            os.remove(filepath)
-
-    # clean output folder
-    for filepath in glob.glob(os.path.join("output", "model", "*.safetensors")):
-        os.remove(filepath)
-
-    for filepath in glob.glob(os.path.join("output", "sample", "*.png")):
-        os.remove(filepath)
-
-    # clean log folder
-    for logdir in glob.glob(os.path.join("log", "*")):
-        if os.path.isdir(logdir):
-            shutil.rmtree(logdir)
-
-
-def handle_attr(user_id, model_key, trigger_word, category):
+def handle_config_file(model_name, category):
     if category == "face":
-        # use origin image to gen train_image
-        gen_face("origin_image", "train_image", trigger_word)
         with open(os.path.join("config", "face.json")) as f:
             config = json.load(f)
+        # overwrite config
         config["train_data_dir"] = os.path.join(os.getcwd(), config["train_data_dir"])
         config["logging_dir"] = os.path.join(os.getcwd(), config["logging_dir"])
         config["output_dir"] = os.path.join(os.getcwd(), config["output_dir"])
+        config["output_name"] = model_name
         config["train_batch_size"] = os.getenv("BATCH_SIZE", 1)
 
         return config
 
-    return None
+    logger.error(f"Not support category: {category}")
+    raise ValueError(f"Not support category: {category}")
+
+
+def message_handle(message):
+    msg = str(message)
+    logger.info(f"Received message: {json.dumps(msg)}.")
+
+    # Acknowledges the received messages so they will not be sent again.
+    subscriber.acknowledge(
+        request={"subscription": subscription_path, "ack_ids": [message.ack_id]}
+    )
+    # process training job
+    start_time = timeit.default_timer()
+    try:
+        process_job(message.message.attributes, message.message.data)
+    except Exception as e:
+        logger.error(f"Fatal Error: {e}")
+    elapsed = timeit.default_timer() - start_time
+    # count minute and second
+    logger.info(
+        f"Process message in {int(elapsed) // 60} minutes {elapsed % 60:.2f} sec.)"
+    )
 
 
 def main():
-    # Conbine the subscription_path = 'projects/{project_id}/subscriptions/{subscription_id}'
-    subscription_path = subscriber.subscription_path(project_id, subscription_id)
-
-    flow_control = pubsub_v1.types.FlowControl(max_messages=1)
-
-    streaming_pull_future = subscriber.subscribe(
-        subscription_path, callback=message_callback, flow_control=flow_control
-    )
+    # because of long running jon (>10min), we need to close the connection after receive the message
     logger.info(f"Listening for messages on {subscription_path}..")
-
-    # Wrap subscriber in a 'with' block to automatically call close() when done.
     with subscriber:
-        try:
-            # When `timeout` is not set, result() will block indefinitely,
-            # unless an exception is encountered first.
-            streaming_pull_future.result(timeout=timeout)
-        except TimeoutError:
-            streaming_pull_future.cancel()
+        while True:
+            response = subscriber.pull(
+                request={"subscription": subscription_path, "max_messages": 1},
+                retry=retry.Retry(deadline=60),
+            )
 
+            if len(response.received_messages) == 0:
+                logger.info(f"No message received. Wait {WAIT_SEC} sec.")
+                time.sleep(WAIT_SEC)
+                continue
 
-def message_callback(message):
-    logger.info(f"Received message: {message}")
-    # process message
-    start_time = timeit.default_timer()
-    message.ack()
-    process_job(message.attributes, message.data)
-    elapsed = timeit.default_timer() - start_time
-    # compute minute and second
-    logger.info(f"Process message in {elapsed // 60} minutes {elapsed % 60} sec.)")
+            if len(response.received_messages) > 1:
+                logger.error(
+                    f"Receive more than one message. {response.received_messages}"
+                )
+
+            message = response.received_messages[0]
+            message_handle(message)
+
+            time.sleep(1)
 
 
 def download_image_from_gcp(model_key, user_id):
@@ -196,7 +200,6 @@ def download_image_from_gcp(model_key, user_id):
     gcp_object = f"{user_id}/{model_key}/origin_images/images.zip"
     blob = bucket.blob(gcp_object)
     zip_filename = os.path.join("tmp", "images.zip")
-    logger.info(f"Download {gcp_object} to {zip_filename}.")
     blob.download_to_filename(zip_filename)
 
     with zipfile.ZipFile(zip_filename, "r") as zip_ref:
@@ -204,4 +207,8 @@ def download_image_from_gcp(model_key, user_id):
 
 
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        logger.info("KeyboardInterrupt Exit.")
+        sys.exit(0)

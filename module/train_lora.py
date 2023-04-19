@@ -1,4 +1,5 @@
 import json
+import timeit
 import os
 import glob
 import subprocess
@@ -12,13 +13,16 @@ TRAIN_PATH = os.getenv("SD_TRAIN_PATH")
 
 
 def train(config):
-    max_train_steps = config["max_train_steps"]
-    train_batch_size = config["train_batch_size"]
+    max_train_steps = int(config["max_train_steps"])
+    train_batch_size = int(config["train_batch_size"])
     train_data_dir = config["train_data_dir"]
     num_ckpts = 5
 
     # count num of train images
     image_count = len(glob.glob(os.path.join(train_data_dir, "**", "*.jpg")))
+    if image_count == 0:
+        logger.error("No images found in train_data_dir")
+        raise ValueError("No images found in train_data_dir")
 
     max_train_steps = max_train_steps // train_batch_size
     image_per_steps = image_count // train_batch_size
@@ -52,9 +56,8 @@ def train(config):
         "train_network.py",
     ]
 
-    logger.info(
-        "Execute training command: " + " ".join(accelerate_args + train_network_args)
-    )
+    logger.info("Execute command: " + " ".join(accelerate_args + train_network_args))
+    start = timeit.default_timer()
     subprocess.run(
         [
             "bash",
@@ -62,6 +65,8 @@ def train(config):
             f"cd {TRAIN_PATH} && {' '.join(accelerate_args + train_network_args)}",
         ]
     )
+    end = timeit.default_timer()
+    logger.info(f"Training time: {end - start} sec.")
 
 
 if __name__ == "__main__":

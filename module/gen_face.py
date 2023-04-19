@@ -50,12 +50,10 @@ def gen_face(source_dir, target_dir, trigger_word=FACE_NAME):
         results = mp_face_detection.process(image)
 
         if results.detections is None:
-            logger.info(f"No face detected:{image_path}")
             no_face_files.append(image_path)
             continue
 
         if len(results.detections) > 1:
-            logger.info(f"More than one face detected:{image_path}")
             more_than_one_face_files.append(image_path)
             continue
 
@@ -113,7 +111,7 @@ def gen_face(source_dir, target_dir, trigger_word=FACE_NAME):
         # mask out of face area
         results_mesh = mp_face_mesh.process(landmark_image)
         if results_mesh.multi_face_landmarks is None:
-            logger.info(f"No landmark detected:{image_path}")
+            no_face_files.append(image_path)
             continue
 
         for face_landmarks in results_mesh.multi_face_landmarks:

@@ -18,9 +18,6 @@ load_dotenv()
 SD_WEB_PATH = os.getenv("SD_WEB_PATH")
 
 URL = "http://127.0.0.1:7861"
-GENDER = "male"
-STEPS = 50
-SAMPLE_METHOD = "UniPC"
 CKPT_LIST = [
     "v1-5-pruned-emaonly.safetensors [6ce0161689]",
     "chilloutmix_NiPrunedFp32Fix.safetensors [fc2511737a]",
@@ -28,8 +25,6 @@ CKPT_LIST = [
     "realisticVisionV20_v20.safetensors [c0d1994c73]",
 ]
 RETRY_SEC = 20
-BATCH_COUNT = 6
-RESOLUTION = 384
 
 
 # API List
@@ -38,10 +33,27 @@ POST_OPTIONS = "/sdapi/v1/options"
 POST_TXT2IMG = "/sdapi/v1/txt2img"
 
 
-def gen_example(lora_dir, target_lora, img_output_dir, trigger_word):
+def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
+    logger.info("Start gen_example")
+    gender = meta_data["gender"]
+    batch_count = meta_data["batch_count"]
+    sample_res = meta_data["sample_res"]
+    sample_method = meta_data["sample_method"]
+    sample_steps = meta_data["sample_steps"]
+
+    # cp lora file to webui server
+    subprocess.Popen(
+        [
+            "bash",
+            "-c",
+            f"cp {lora_dir}/{target_lora}.safetensors {SD_WEB_PATH}/models/Lora/",
+        ]
+    )
+
     # 啟用shell script，例如啟用名為start_server.sh的腳本
     start_server = (
-        f"./webui.sh --xformers --api --api-log --nowebui --lora-dir {lora_dir}"
+        #        f"./webui.sh --xformers --api --api-log --nowebui --lora-dir {lora_dir}"
+        f"./webui.sh --xformers --api --api-log --nowebui"
     )
     subprocess.Popen(
         [
@@ -57,26 +69,27 @@ def gen_example(lora_dir, target_lora, img_output_dir, trigger_word):
         try:
             time.sleep(RETRY_SEC)
             response = requests.get(f"{URL}{GET_SD_MODELS}")
-            logging.info(f"Response: {response.status_code} SD WebUI is ready.")
             available_ckpt = response.json()
             available_ckpt = [ckpt["title"] for ckpt in available_ckpt]
-            # Limit to max
-            logging.info(f"Available checkpoints: {available_ckpt}")
+            logging.info(
+                f"Response: {response.status_code} SD WebUI is ready. Available checkpoints: {available_ckpt}"
+            )
 
         except requests.exceptions.ConnectionError:
             logging.info(f"Retrying... in {RETRY_SEC} seconds")
 
+    clothes = "shirt" if gender == "male" else "blouse"
     # payload
     payload = {
-        "prompt": f"RAW photo, {GENDER}, a close photo of {trigger_word}, upper body, random background, high detailed skin, 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT3<lora:{target_lora}:1>",
-        "negative_prompt": "(deformed iris, deformed pupils:1.3), nude, nsfw, text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck",
-        "steps": STEPS,
-        "sampler_name": "UniPC",
-        "sampler_index": SAMPLE_METHOD,
+        "prompt": f"RAW photo, {gender}, a close portrait of {trigger_word}, wearing {clothes}, random background, high detailed skin, 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT3<lora:{target_lora}:1>",
+        "negative_prompt": "(deformed iris, deformed pupils:1.3), naked,nude, nsfw, text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck",
+        "steps": sample_steps,
+        "sampler_name": sample_method,
+        "sampler_index": sample_method,
         "restore_faces": "true",
-        "n_iter": BATCH_COUNT,
-        "width": RESOLUTION,
-        "height": RESOLUTION,
+        "n_iter": batch_count,
+        "width": sample_res,
+        "height": sample_res,
         "seed": 9075,
     }
 
@@ -109,8 +122,24 @@ def gen_example(lora_dir, target_lora, img_output_dir, trigger_word):
     subprocess.Popen(["pkill", "-f", "python3 launch.py"])
     subprocess.Popen(["pkill", "-f", "api_start.sh"])
 
+    # remove lora file from webui server
+    subprocess.Popen(
+        [
+            "bash",
+            "-c",
+            f"rm {SD_WEB_PATH}/models/Lora/{target_lora}.safetensors",
+        ]
+    )
+
 
 if __name__ == "__main__":
     lora_dir = os.path.join(os.getcwd(), "output", "model")
     output_dir = os.path.join(os.getcwd(), "output", "sample")
-    gen_example(lora_dir, "AutoTrainFace", output_dir, "MY_NAME")
+    meta_data = {
+        "batch_count": 3,
+        "sample_method": "UniPC",
+        "sample_res": 384,
+        "sample_steps": 50,
+        "gender": "male",
+    }
+    gen_example(lora_dir, meta_data, "AutoTrainFace", output_dir, "MY_NAME")
