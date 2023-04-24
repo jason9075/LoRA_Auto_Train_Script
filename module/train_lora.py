@@ -12,7 +12,11 @@ load_dotenv()
 TRAIN_PATH = os.getenv("SD_TRAIN_PATH")
 
 
-def train(config):
+def train(config, train_dict=None):
+    # overwrite config
+    if train_dict:
+        for key, value in train_dict.items():
+            config[key] = value
     max_train_steps = int(config["max_train_steps"])
     train_batch_size = int(config["train_batch_size"])
     train_data_dir = config["train_data_dir"]
@@ -58,13 +62,16 @@ def train(config):
 
     logger.info("Execute command: " + " ".join(accelerate_args + train_network_args))
     start = timeit.default_timer()
-    subprocess.run(
+    p = subprocess.run(
         [
             "bash",
             "-c",
             f"cd {TRAIN_PATH} && {' '.join(accelerate_args + train_network_args)}",
         ]
     )
+    if p.returncode != 0:
+        logger.error("Training failed.")
+        raise ValueError("Training failed.")
     end = timeit.default_timer()
     logger.info(f"Training time: {end - start} sec.")
 

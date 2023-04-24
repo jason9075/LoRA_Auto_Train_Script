@@ -1,4 +1,3 @@
-import json
 import requests
 import io
 import base64
@@ -28,18 +27,17 @@ RETRY_SEC = 20
 
 
 # API List
-GET_SD_MODELS = "/sdapi/v1/sd-models"
-POST_OPTIONS = "/sdapi/v1/options"
-POST_TXT2IMG = "/sdapi/v1/txt2img"
+API_GET_SD_MODELS = "/sdapi/v1/sd-models"
+API_POST_OPTIONS = "/sdapi/v1/options"
+API_POST_TXT2IMG = "/sdapi/v1/txt2img"
 
 
 def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
-    logger.info("Start gen_example")
+    enable = meta_data["gen_example_enable"]
+    if not enable:
+        logger.info("gen_example is disabled.")
+        return
     gender = meta_data["gender"]
-    batch_count = meta_data["batch_count"]
-    sample_res = meta_data["sample_res"]
-    sample_method = meta_data["sample_method"]
-    sample_steps = meta_data["sample_steps"]
 
     # cp lora file to webui server
     subprocess.Popen(
@@ -55,7 +53,7 @@ def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
         #        f"./webui.sh --xformers --api --api-log --nowebui --lora-dir {lora_dir}"
         f"./webui.sh --xformers --api --api-log --nowebui"
     )
-    subprocess.Popen(
+    p = subprocess.Popen(
         [
             "bash",
             "-c",
@@ -68,7 +66,7 @@ def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
     while response is None or response.status_code != 200:
         try:
             time.sleep(RETRY_SEC)
-            response = requests.get(f"{URL}{GET_SD_MODELS}")
+            response = requests.get(f"{URL}{API_GET_SD_MODELS}")
             available_ckpt = response.json()
             available_ckpt = [ckpt["title"] for ckpt in available_ckpt]
             logging.info(
@@ -76,22 +74,30 @@ def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
             )
 
         except requests.exceptions.ConnectionError:
+            if p.poll() is not None:
+                logger.error(
+                    "SD WebUI server is not running. Please check the log for more details."
+                )
+                raise ValueError("SD WebUI server is not running.")
             logging.info(f"Retrying... in {RETRY_SEC} seconds")
 
     clothes = "shirt" if gender == "male" else "blouse"
     # payload
     payload = {
         "prompt": f"RAW photo, {gender}, a close portrait of {trigger_word}, wearing {clothes}, random background, high detailed skin, 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT3<lora:{target_lora}:1>",
-        "negative_prompt": "(deformed iris, deformed pupils:1.3), naked,nude, nsfw, text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, ugly, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck",
-        "steps": sample_steps,
-        "sampler_name": sample_method,
-        "sampler_index": sample_method,
-        "restore_faces": "true",
-        "n_iter": batch_count,
-        "width": sample_res,
-        "height": sample_res,
+        "negative_prompt": "(deformed iris, deformed pupils:1.3), naked, nude, nsfw, text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck",
+        "steps": 20,
+        "sampler_name": "UniPC",
+        "sampler_index": "UniPC",
+        "restore_faces": "false",
+        "n_iter": 1,
+        "width": 512,
+        "height": 512,
         "seed": 9075,
     }
+    # add example_dict if exists
+    if meta_data.get("example") is not None:
+        payload.update(meta_data.get("example"))
 
     # loop through all checkpoints
     logger.info(f"Generating images for {CKPT_LIST}...")
@@ -100,9 +106,9 @@ def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
 
         option_payload = {"sd_model_checkpoint": ckpt, "CLIP_stop_at_last_layers": 1}
         # update checkpoint file
-        response = requests.post(url=f"{URL}{POST_OPTIONS}", json=option_payload)
+        response = requests.post(url=f"{URL}{API_POST_OPTIONS}", json=option_payload)
 
-        response = requests.post(url=f"{URL}{POST_TXT2IMG}", json=payload)
+        response = requests.post(url=f"{URL}{API_POST_TXT2IMG}", json=payload)
 
         r = response.json()
 
@@ -119,11 +125,10 @@ def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
             )
 
     # shutdown server
-    subprocess.Popen(["pkill", "-f", "python3 launch.py"])
-    subprocess.Popen(["pkill", "-f", "api_start.sh"])
+    p.kill()
 
     # remove lora file from webui server
-    subprocess.Popen(
+    subprocess.run(
         [
             "bash",
             "-c",
@@ -135,11 +140,5 @@ def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
 if __name__ == "__main__":
     lora_dir = os.path.join(os.getcwd(), "output", "model")
     output_dir = os.path.join(os.getcwd(), "output", "sample")
-    meta_data = {
-        "batch_count": 3,
-        "sample_method": "UniPC",
-        "sample_res": 384,
-        "sample_steps": 50,
-        "gender": "male",
-    }
+    meta_data = {"gender": "male", "gen_example_enable": True}
     gen_example(lora_dir, meta_data, "AutoTrainFace", output_dir, "MY_NAME")

@@ -28,7 +28,7 @@ formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
-logger.info("Start app.")
+logger.info("⭐Start app.")
 
 # constant
 project_id = "onyx-codex-383017"
@@ -61,6 +61,8 @@ def process_job(attr, msg_data):
     model_name = attr["model_name"]
     trigger_word = attr["trigger_word"]
     category = attr["category"]
+    # deserialize json from msg_data
+    meta_data = json.loads(msg_data, encoding="utf-8")
 
     # handle config
     config = handle_config_file(model_name, category)
@@ -73,10 +75,10 @@ def process_job(attr, msg_data):
 
     logger.info("🔹Start data augmentation")
     if category == "face":
-        gen_face("origin_image", "train_image", trigger_word)
+        gen_face("origin_image", "train_image", meta_data["gender"], trigger_word)
 
     logger.info("🔹Start training job.")
-    train(config)
+    train(config, meta_data["train"])
 
     logger.info("🔹Remove down blocks and weights.")
     if category == "face":
@@ -84,9 +86,6 @@ def process_job(attr, msg_data):
 
     logger.info("🔹Generate sample image.")
     if category == "face":
-        # deserialize json from msg_data
-        meta_data = json.loads(msg_data, encoding="utf-8")
-
         gen_example(
             config["output_dir"],
             meta_data,

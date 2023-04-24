@@ -44,7 +44,7 @@
   "max_train_epochs": "",
   "max_data_loader_n_workers": "1",
   "training_comment": "Auto-train-script-by-jason9075",
-  "keep_tokens": "0",
+  "keep_tokens": "2",
   "lr_scheduler_num_cycles": "",
   "lr_scheduler_power": "",
   "persistent_data_loader_workers": false,

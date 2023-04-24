@@ -4,6 +4,7 @@ import glob
 import mediapipe as mp
 import cv2
 from torch import conj
+import argparse
 import logging
 
 logger = logging.getLogger()
@@ -21,7 +22,7 @@ mp_drawing = mp.solutions.drawing_utils
 mp_face_mesh = mp.solutions.face_mesh.FaceMesh()
 
 
-def gen_face(source_dir, target_dir, trigger_word=FACE_NAME):
+def gen_face(source_dir, target_dir, gender, trigger_word=FACE_NAME):
     # create 1_face folder under target_dir
     face_dir = os.path.join(target_dir, "1_face")
     if not os.path.exists(face_dir):
@@ -139,7 +140,9 @@ def gen_face(source_dir, target_dir, trigger_word=FACE_NAME):
         cv2.imwrite(os.path.join(face_dir, f"{index}.jpg"), image)
         path = os.path.join(face_dir, f"{index}.txt")
         with open(path, "w") as f:
-            f.write(f"a person with {trigger_word} face, white background")
+            f.write(
+                f"{trigger_word}, 1{gender}, a person with {trigger_word} face, white background"
+            )
 
         index += 1
 
@@ -149,4 +152,9 @@ def gen_face(source_dir, target_dir, trigger_word=FACE_NAME):
 
 
 if __name__ == "__main__":
-    gen_face("origin_image", "train_image")
+    parser = argparse.ArgumentParser()
+    # args for model folder
+    parser.add_argument("gender", type=str, default="male")
+    args = parser.parse_args()
+
+    gen_face("origin_image", "train_image", args.gender)

@@ -1,28 +1,30 @@
 #!/bin/bash
 
-# TRAIN_SCRIPT_PATH=~/LoRA_Easy_Training_Scripts/sd_scripts/
-TRAIN_SCRIPT_PATH=~/projects/kohya_ss-linux/
+TRAIN_SCRIPT_PATH=~/projects/LoRA_Easy_Training_Scripts/sd_scripts/
+# TRAIN_SCRIPT_PATH=~/projects/kohya_ss-linux/
 TRAIN_DATA_PATH=~/projects/LoRA_Auto_Train_Script
+MODEL_NAME="豬哥亮"
+GENDER=male
 max_train_steps=1250
-num_ckpts=5
+num_ckpts=1
 
+# check training exist
 image_count=$(ls ./train_image/1_face/*.jpg 2>/dev/null | wc -l)
-
 if [ "$image_count" -eq 0 ]; then
     echo "Gen Faces."
-    python module/gen_face.py
+    python module/gen_face.py "$GENDER"
 fi
 
 image_count=$(ls ./train_image/1_face/*.jpg 2>/dev/null | wc -l)
 
-CONFIG_PATH=./config/face_old.config
+CONFIG_PATH=./config/face.json
 # 讀取JSON文件中的設置
 pretrained_model_name_or_path=$(jq -r '.pretrained_model_name_or_path' $CONFIG_PATH)
 logging_dir=$(jq -r '.logging_dir' $CONFIG_PATH)
 train_data_dir=$(jq -r '.train_data_dir' $CONFIG_PATH)
 reg_data_dir=$(jq -r '.reg_data_dir' $CONFIG_PATH)
 output_dir=$(jq -r '.output_dir' $CONFIG_PATH)
-max_resolution=$(jq -r '.max_resolution' $CONFIG_PATH)
+resolution=$(jq -r '.resolution' $CONFIG_PATH)
 learning_rate=$(jq -r '.learning_rate' $CONFIG_PATH)
 lr_scheduler=$(jq -r '.lr_scheduler' $CONFIG_PATH)
 lr_warmup=$(jq -r '.lr_warmup' $CONFIG_PATH)
@@ -41,16 +43,17 @@ resume=$(jq -r '.resume' $CONFIG_PATH)
 text_encoder_lr=$(jq -r '.text_encoder_lr' $CONFIG_PATH)
 unet_lr=$(jq -r '.unet_lr' $CONFIG_PATH)
 network_dim=$(jq -r '.network_dim' $CONFIG_PATH)
-output_name=$(jq -r '.output_name' $CONFIG_PATH)
 max_data_loader_n_workers=$(jq -r '.max_data_loader_n_workers' $CONFIG_PATH)
 network_alpha=$(jq -r '.network_alpha' $CONFIG_PATH)
 training_comment=$(jq -r '.training_comment' $CONFIG_PATH)
 lr_scheduler_num_cycles=$(jq -r '.lr_scheduler_num_cycles' $CONFIG_PATH)
 lr_scheduler_power=$(jq -r '.lr_scheduler_power' $CONFIG_PATH)
 persistent_data_loader_workers=$(jq -r '.persistent_data_loader_workers' $CONFIG_PATH)
-optimizer=$(jq -r '.optimizer' $CONFIG_PATH)
+optimizer_type=$(jq -r '.optimizer_type' $CONFIG_PATH)
 optimizer_args=$(jq -r '.optimizer_args' $CONFIG_PATH)
 noise_offset=$(jq -r '.noise_offset' $CONFIG_PATH)
+keep_tokens=$(jq -r '.keep_tokens' $CONFIG_PATH)
+rules=$(jq -r '.rules' $CONFIG_PATH)
 
 # calculate save_every_n_epochs 
 max_train_steps=$((max_train_steps / train_batch_size))
@@ -59,14 +62,15 @@ save_every_n_epochs=$((max_train_steps / image_per_steps / num_ckpts))
 
 cd $TRAIN_SCRIPT_PATH
 
-accelerate launch --num_cpu_threads_per_process="$num_cpu_threads_per_process" \
+accelerate launch \
+--num_cpu_threads_per_process=6 \
 --num_processes=1 \
 --num_machines=1 \
 --mixed_precision="no" \
 "train_network.py" \
 --pretrained_model_name_or_path="$pretrained_model_name_or_path" \
 --train_data_dir="$TRAIN_DATA_PATH/$train_data_dir" \
---resolution="$max_resolution" \
+--resolution="$resolution" \
 --output_dir="$TRAIN_DATA_PATH/$output_dir" \
 --logging_dir="$TRAIN_DATA_PATH/$logging_dir" \
 --network_alpha="$network_alpha" \
@@ -75,9 +79,10 @@ accelerate launch --num_cpu_threads_per_process="$num_cpu_threads_per_process" \
 --text_encoder_lr="$text_encoder_lr" \
 --unet_lr="$unet_lr" \
 --network_dim="$network_dim" \
---output_name="$output_name" \
+--output_name="$MODEL_NAME" \
 --learning_rate="$learning_rate" \
 --lr_scheduler="$lr_scheduler" \
+--rules="$rules" \
 --train_batch_size="$train_batch_size" \
 --max_train_steps="$max_train_steps" \
 --save_every_n_epochs="$save_every_n_epochs" \
@@ -85,9 +90,10 @@ accelerate launch --num_cpu_threads_per_process="$num_cpu_threads_per_process" \
 --save_precision="$save_precision" \
 --seed="$seed" \
 --caption_extension="$caption_extension" \
---optimizer_type=$optimizer \
+--optimizer_type=$optimizer_type \
 --max_data_loader_n_workers="$max_data_loader_n_workers" \
 --training_comment="$training_comment" \
+--keep_tokens="$keep_tokens" \
 --bucket_reso_steps=64 \
 --mem_eff_attn \
 --xformers \
