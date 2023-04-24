@@ -75,9 +75,6 @@ def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
 
         except requests.exceptions.ConnectionError:
             if p.poll() is not None:
-                logger.error(
-                    "SD WebUI server is not running. Please check the log for more details."
-                )
                 raise ValueError("SD WebUI server is not running.")
             logging.info(f"Retrying... in {RETRY_SEC} seconds")
 
@@ -85,14 +82,14 @@ def gen_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_word):
     # payload
     payload = {
         "prompt": f"RAW photo, {gender}, a close portrait of {trigger_word}, wearing {clothes}, random background, high detailed skin, 8k uhd, dslr, soft lighting, high quality, film grain, Fujifilm XT3<lora:{target_lora}:1>",
-        "negative_prompt": "(deformed iris, deformed pupils:1.3), naked, nude, nsfw, text, close up, cropped, out of frame, worst quality, low quality, jpeg artifacts, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck",
+        "negative_prompt": "(deformed iris, deformed pupils:1.3), naked, nude, nsfw, text, cropped, out of frame, worst quality, low quality, jpeg artifacts, duplicate, morbid, mutilated, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, mutation, deformed, blurry, dehydrated, bad anatomy, bad proportions, extra limbs, cloned face, disfigured, gross proportions, malformed limbs, missing arms, missing legs, extra arms, extra legs, fused fingers, too many fingers, long neck",
         "steps": 20,
         "sampler_name": "UniPC",
         "sampler_index": "UniPC",
         "restore_faces": "false",
         "n_iter": 1,
-        "width": 512,
-        "height": 512,
+        "width": 128,
+        "height": 128,
         "seed": 9075,
     }
     # add example_dict if exists
