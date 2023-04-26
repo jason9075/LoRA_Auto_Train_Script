@@ -67,25 +67,22 @@ def process_job(attr, msg_data):
 
     # handle config
     config = handle_config_file(model_name, category)
-    if config is None:
-        logger.error(f"Not support category: {category}")
-        return
 
-    logger.info(f"🔹Download {user_id}/{model_key} images.zip .")
+    logger.info(f"1️⃣Download {user_id}/{model_key} images.zip .")
     download_image_from_gcp(model_key, user_id)
 
-    logger.info("🔹Start data augmentation")
+    logger.info("2️⃣ Start data augmentation.")
     if category == "face":
         gen_face("origin_image", "train_image", meta_data["gender"], trigger_word)
 
-    logger.info("🔹Start training job.")
+    logger.info("3️⃣Start training job.")
     train(config, meta_data["train"])
 
-    logger.info("🔹Remove down blocks and weights.")
+    logger.info("4️⃣Remove dblocks and weights.")
     if category == "face":
         remove(config["output_dir"])
 
-    logger.info("🔹Generate sample image.")
+    logger.info("5️⃣Generate sample image.")
     if category == "face":
         gen_face_example(
             config["output_dir"],
@@ -95,17 +92,16 @@ def process_job(attr, msg_data):
             trigger_word,
         )
 
-    logger.info("🔹Upload sample images to gcp.")
+    logger.info("6️⃣Upload sample images to gcp.")
     upload_sample_image_to_gcp(user_id, model_key)
     zip_and_upload_gcp(user_id, model_key, "output")
     zip_and_upload_gcp(user_id, model_key, "log")
 
-    logger.info("🔹Clean train image, model and log.")
+    logger.info("7️⃣Clean train image, model and log.")
     clean_data()
 
 
 def upload_sample_image_to_gcp(user_id, model_key):
-    logger.info("Upload sample images to gcp.")
     for sample_path in glob.glob(os.path.join(sample_dir, "*.png")):
         sample_name = os.path.basename(sample_path)
         gcp_object = f"{user_id}/{model_key}/sample/{sample_name}"
@@ -127,7 +123,6 @@ def zip_and_upload_gcp(user_id, model_key, target_folder):
                 # Add file to zip
                 zipObj.write(filePath)
     blob = bucket.blob(gcp_object)
-    logger.info(f"Upload {local_file} to {gcp_object}.")
     blob.upload_from_filename(local_file)
 
 
@@ -144,13 +139,12 @@ def handle_config_file(model_name, category):
 
         return config
 
-    logger.error(f"Not support category: {category}")
     raise ValueError(f"Not support category: {category}")
 
 
 def message_handle(message):
     msg = str(message)
-    logger.info(f"Received message: {json.dumps(msg)}.")
+    logger.info(f"🆕Received message: {json.dumps(msg)}.")
 
     # Acknowledges the received messages so they will not be sent again.
     subscriber.acknowledge(
@@ -161,16 +155,16 @@ def message_handle(message):
     try:
         process_job(message.message.attributes, message.message.data)
     except Exception as e:
-        logger.error(f"Fatal Error: {e}")
+        logger.error(f"❌Fatal Error: {e}")
     elapsed = timeit.default_timer() - start_time
     # count minute and second
     logger.info(
-        f"Process message in {int(elapsed) // 60} minutes {elapsed % 60:.2f} sec.)"
+        f"✅Process complete. Cost {int(elapsed) // 60} minutes {elapsed % 60:.2f} sec.)"
     )
 
 
 def main():
-    # because of long running jon (>10min), we need to close the connection after receive the message
+    # because of long running jon (>10min), we need to ack when receive the message
     logger.info(f"Listening for messages on {subscription_path}..")
     with subscriber:
         while True:
