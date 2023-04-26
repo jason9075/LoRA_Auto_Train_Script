@@ -22,8 +22,8 @@ ehthumbs.db
 Desktop.ini
 
 
-train_image/1_face/**
-!train_image/1_face/.keep
+train_image/**
+!train_image/.keep
 
 person/**
 !person/.keep
@@ -45,6 +45,9 @@ log/**
 
 tmp/**
 !tmp/.keep
+
+pretrain_model/**
+!pretrain_model/download.sh
 
 key/**
 

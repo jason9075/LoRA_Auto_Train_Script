@@ -18,7 +18,7 @@
   "full_fp16": false,
   "max_train_steps": 1250,
   "learning_rate": "0.0005",
-  "lr_scheduler": "constant_with_rules",
+  "lr_scheduler": "cosine",
   "rules": "1:50,0.5:200,0.1:400,0.05:700,0.01:850,0.005",
   "lr_warmup": "0",
   "mixed_precision": "fp16",

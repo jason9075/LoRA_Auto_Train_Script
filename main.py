@@ -10,7 +10,7 @@ from concurrent.futures import TimeoutError
 from google.cloud import pubsub_v1
 from google.oauth2 import service_account
 from google.cloud import storage
-from module.gen_example import gen_example
+from module.gen_example import gen_face_example
 from module.gen_face import gen_face
 from module.train_lora import train
 from module.remove_down_blocks_weights import remove
@@ -27,6 +27,7 @@ file_handler.setLevel(logging.INFO)
 formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
+logger.addHandler(logging.StreamHandler(sys.stdout))
 
 logger.info("⭐Start app.")
 
@@ -86,7 +87,7 @@ def process_job(attr, msg_data):
 
     logger.info("🔹Generate sample image.")
     if category == "face":
-        gen_example(
+        gen_face_example(
             config["output_dir"],
             meta_data,
             config["output_name"],

@@ -1,9 +1,7 @@
 import numpy as np
 import os
 import glob
-import mediapipe as mp
 import cv2
-from torch import conj
 import argparse
 import logging
 
@@ -17,12 +15,13 @@ TARGET_SIZE = (512, 512)
 KERNEL = np.ones((16, 16), np.uint8)
 
 
-mp_face_detection = mp.solutions.face_detection.FaceDetection()
-mp_drawing = mp.solutions.drawing_utils
-mp_face_mesh = mp.solutions.face_mesh.FaceMesh()
-
-
 def gen_face(source_dir, target_dir, gender, trigger_word=FACE_NAME):
+    import mediapipe as mp
+
+    mp_face_detection = mp.solutions.face_detection.FaceDetection()
+    mp_drawing = mp.solutions.drawing_utils
+    mp_face_mesh = mp.solutions.face_mesh.FaceMesh()
+
     # create 1_face folder under target_dir
     face_dir = os.path.join(target_dir, "1_face")
     if not os.path.exists(face_dir):
