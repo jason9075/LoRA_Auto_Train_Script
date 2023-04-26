@@ -6,15 +6,15 @@ import timeit
 import sys
 import logging
 import time
-from concurrent.futures import TimeoutError
 from google.cloud import pubsub_v1
 from google.oauth2 import service_account
 from google.cloud import storage
 from module.gen_example import gen_face_example
 from module.gen_face import gen_face
 from module.train_lora import train
-from module.remove_down_blocks_weights import remove
+from module.remove_down_blocks_weights import remove_face_weight
 from module.clean import clean_data
+from module.weight_inspect import write_mean_var_file
 from google.api_core import retry
 from dotenv import load_dotenv
 
@@ -80,9 +80,12 @@ def process_job(attr, msg_data):
 
     logger.info("4️⃣Remove dblocks and weights.")
     if category == "face":
-        remove(config["output_dir"])
+        remove_face_weight(config["output_dir"])
 
-    logger.info("5️⃣Generate sample image.")
+    logger.info("5️⃣Write mean and var file.")
+    write_mean_var_file(config["output_dir"], config["log"])
+
+    logger.info("6️⃣Generate sample image.")
     if category == "face":
         gen_face_example(
             config["output_dir"],
@@ -92,12 +95,12 @@ def process_job(attr, msg_data):
             trigger_word,
         )
 
-    logger.info("6️⃣Upload sample images to gcp.")
+    logger.info("7️⃣Upload sample images to gcp.")
     upload_sample_image_to_gcp(user_id, model_key)
     zip_and_upload_gcp(user_id, model_key, "output")
     zip_and_upload_gcp(user_id, model_key, "log")
 
-    logger.info("7️⃣Clean train image, model and log.")
+    logger.info("8️⃣Clean train image, model and log.")
     clean_data()
 
 

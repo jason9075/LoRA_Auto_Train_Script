@@ -3,7 +3,7 @@
 TRAIN_SCRIPT_PATH=~/projects/LoRA_Easy_Training_Scripts/sd_scripts/
 # TRAIN_SCRIPT_PATH=~/projects/kohya_ss-linux/
 TRAIN_DATA_PATH=~/projects/LoRA_Auto_Train_Script
-MODEL_NAME="豬哥亮"
+MODEL_NAME="ccc-tune"
 GENDER=male
 max_train_steps=1250
 num_ckpts=1
@@ -58,46 +58,91 @@ rules=$(jq -r '.rules' $CONFIG_PATH)
 # calculate save_every_n_epochs 
 max_train_steps=$((max_train_steps / train_batch_size))
 image_per_steps=$((image_count / train_batch_size))
-save_every_n_epochs=$((max_train_steps / image_per_steps / num_ckpts))
+# if num_ckpt > 1, save_every_n_epochs = max_train_steps / image_per_steps / num_ckpt else 0
+if [ "$num_ckpts" -gt 1 ]; then
+    save_every_n_epochs=$((max_train_steps / image_per_steps / num_ckpts))
+else
+    save_every_n_epochs=0
+fi
 
 cd $TRAIN_SCRIPT_PATH
 
-accelerate launch \
---num_cpu_threads_per_process=6 \
---num_processes=1 \
---num_machines=1 \
---mixed_precision="no" \
-"train_network.py" \
---pretrained_model_name_or_path="$pretrained_model_name_or_path" \
---train_data_dir="$TRAIN_DATA_PATH/$train_data_dir" \
---resolution="$resolution" \
---output_dir="$TRAIN_DATA_PATH/$output_dir" \
---logging_dir="$TRAIN_DATA_PATH/$logging_dir" \
---network_alpha="$network_alpha" \
---save_model_as="$save_model_as" \
---network_module="networks.lora" \
---text_encoder_lr="$text_encoder_lr" \
---unet_lr="$unet_lr" \
---network_dim="$network_dim" \
---output_name="$MODEL_NAME" \
---learning_rate="$learning_rate" \
---lr_scheduler="$lr_scheduler" \
---rules="$rules" \
---train_batch_size="$train_batch_size" \
---max_train_steps="$max_train_steps" \
---save_every_n_epochs="$save_every_n_epochs" \
---mixed_precision="$mixed_precision" \
---save_precision="$save_precision" \
---seed="$seed" \
---caption_extension="$caption_extension" \
---optimizer_type=$optimizer_type \
---max_data_loader_n_workers="$max_data_loader_n_workers" \
---training_comment="$training_comment" \
---keep_tokens="$keep_tokens" \
---bucket_reso_steps=64 \
---mem_eff_attn \
---xformers \
---bucket_no_upscale
+
+# if save_n_epochs = 0, dont't use save_every_n_epochs
+if [ "$save_every_n_epochs" -eq 0 ]; then
+    accelerate launch \
+    --num_cpu_threads_per_process=6 \
+    --num_processes=1 \
+    --num_machines=1 \
+    --mixed_precision="no" \
+    "train_network.py" \
+    --pretrained_model_name_or_path="$pretrained_model_name_or_path" \
+    --train_data_dir="$TRAIN_DATA_PATH/$train_data_dir" \
+    --resolution="$resolution" \
+    --output_dir="$TRAIN_DATA_PATH/$output_dir" \
+    --logging_dir="$TRAIN_DATA_PATH/$logging_dir" \
+    --network_alpha="$network_alpha" \
+    --save_model_as="$save_model_as" \
+    --network_module="networks.lora" \
+    --text_encoder_lr="$text_encoder_lr" \
+    --unet_lr="$unet_lr" \
+    --network_dim="$network_dim" \
+    --output_name="$MODEL_NAME" \
+    --learning_rate="$learning_rate" \
+    --lr_scheduler="$lr_scheduler" \
+    --rules="$rules" \
+    --train_batch_size="$train_batch_size" \
+    --max_train_steps="$max_train_steps" \
+    --mixed_precision="$mixed_precision" \
+    --save_precision="$save_precision" \
+    --seed="$seed" \
+    --caption_extension="$caption_extension" \
+    --optimizer_type=$optimizer_type \
+    --max_data_loader_n_workers="$max_data_loader_n_workers" \
+    --training_comment="$training_comment" \
+    --keep_tokens="$keep_tokens" \
+    --bucket_reso_steps=64 \
+    --mem_eff_attn \
+    --xformers \
+    --bucket_no_upscale
+else
+    accelerate launch \
+    --num_cpu_threads_per_process=6 \
+    --num_processes=1 \
+    --num_machines=1 \
+    --mixed_precision="no" \
+    "train_network.py" \
+    --pretrained_model_name_or_path="$pretrained_model_name_or_path" \
+    --train_data_dir="$TRAIN_DATA_PATH/$train_data_dir" \
+    --resolution="$resolution" \
+    --output_dir="$TRAIN_DATA_PATH/$output_dir" \
+    --logging_dir="$TRAIN_DATA_PATH/$logging_dir" \
+    --network_alpha="$network_alpha" \
+    --save_model_as="$save_model_as" \
+    --network_module="networks.lora" \
+    --text_encoder_lr="$text_encoder_lr" \
+    --unet_lr="$unet_lr" \
+    --network_dim="$network_dim" \
+    --output_name="$MODEL_NAME" \
+    --learning_rate="$learning_rate" \
+    --lr_scheduler="$lr_scheduler" \
+    --rules="$rules" \
+    --train_batch_size="$train_batch_size" \
+    --max_train_steps="$max_train_steps" \
+    --save_every_n_epochs="$save_every_n_epochs" \
+    --mixed_precision="$mixed_precision" \
+    --save_precision="$save_precision" \
+    --seed="$seed" \
+    --caption_extension="$caption_extension" \
+    --optimizer_type=$optimizer_type \
+    --max_data_loader_n_workers="$max_data_loader_n_workers" \
+    --training_comment="$training_comment" \
+    --keep_tokens="$keep_tokens" \
+    --bucket_reso_steps=64 \
+    --mem_eff_attn \
+    --xformers \
+    --bucket_no_upscale
+fi
 
 # remove down blocks weights
 cd -

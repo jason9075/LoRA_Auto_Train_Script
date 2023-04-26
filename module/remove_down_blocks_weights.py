@@ -28,7 +28,7 @@ prefix_keys = [
 ]
 
 
-def remove(target_path):
+def remove_face_weight(target_path, log_path="log"):
     file_list = os.listdir(target_path)
     file_list = [f for f in file_list if f.endswith(".safetensors")]
 
@@ -48,4 +48,4 @@ if __name__ == "__main__":
     # args for model folder
     parser.add_argument("model_dir", type=str, default="~/lora_auto_train/model/")
     args = parser.parse_args()
-    remove(args.model_dir)
+    remove_face_weight(args.model_dir)

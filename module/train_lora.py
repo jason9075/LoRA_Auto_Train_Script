@@ -12,7 +12,7 @@ load_dotenv()
 TRAIN_PATH = os.getenv("SD_TRAIN_PATH")
 
 
-def train(config, train_dict=None):
+def train(config, train_dict=None, num_ckpts=5):
     # overwrite config
     if train_dict:
         for key, value in train_dict.items():
@@ -20,7 +20,6 @@ def train(config, train_dict=None):
     max_train_steps = int(config["max_train_steps"])
     train_batch_size = int(config["train_batch_size"])
     train_data_dir = config["train_data_dir"]
-    num_ckpts = 5
 
     # count num of train images
     image_count = len(glob.glob(os.path.join(train_data_dir, "**", "*.jpg")))
@@ -34,11 +33,11 @@ def train(config, train_dict=None):
 
     # overwrite config
     config["max_train_steps"] = max_train_steps
-    config["save_every_n_epochs"] = save_every_n_epochs
+    if num_ckpts == 1:
+        config.pop("save_every_n_epochs", None)
+    else:
+        config["save_every_n_epochs"] = save_every_n_epochs
 
-    logger.info(
-        f"image_count: {image_count}, save_every_n_epochs: {save_every_n_epochs}"
-    )
     train_network_args = []
     for key, value in config.items():
         if value == "":
