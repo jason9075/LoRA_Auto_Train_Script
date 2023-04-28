@@ -3,6 +3,7 @@ import os
 import numpy as np
 import torch
 import logging
+import argparse
 
 
 logger = logging.getLogger()
@@ -79,6 +80,8 @@ def calculate_weights_stats(model_file, prefix_keys):
 
 
 if __name__ == "__main__":
-    model_dir = "output/model/"
-    output_dir = "log/"
-    write_mean_var_file(model_dir, output_dir)
+    arg_parser = argparse.ArgumentParser()
+    arg_parser.add_argument("--model_dir", type=str, default="output/model/")
+    arg_parser.add_argument("--output_dir", type=str, default="log/")
+    args = arg_parser.parse_args()
+    write_mean_var_file(args.model_dir, args.output_dir)

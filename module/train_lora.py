@@ -12,7 +12,7 @@ load_dotenv()
 TRAIN_PATH = os.getenv("SD_TRAIN_PATH")
 
 
-def train(config, train_dict=None, num_ckpts=5):
+def train(config, train_dict=None, num_ckpts=1):
     # overwrite config
     if train_dict:
         for key, value in train_dict.items():

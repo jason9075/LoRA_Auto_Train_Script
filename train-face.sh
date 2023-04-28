@@ -3,9 +3,9 @@
 TRAIN_SCRIPT_PATH=~/projects/LoRA_Easy_Training_Scripts/sd_scripts/
 # TRAIN_SCRIPT_PATH=~/projects/kohya_ss-linux/
 TRAIN_DATA_PATH=~/projects/LoRA_Auto_Train_Script
-MODEL_NAME="ccc-tune"
+MODEL_NAME="pig-tune"
 GENDER=male
-max_train_steps=1250
+max_train_steps=250
 num_ckpts=1
 
 # check training exist
