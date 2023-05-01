@@ -3,21 +3,22 @@
 TRAIN_SCRIPT_PATH=~/projects/LoRA_Easy_Training_Scripts/sd_scripts/
 # TRAIN_SCRIPT_PATH=~/projects/kohya_ss-linux/
 TRAIN_DATA_PATH=~/projects/LoRA_Auto_Train_Script
-MODEL_NAME="pig-tune"
-GENDER=male
-max_train_steps=750
+MODEL_NAME="GordonFreeman"
+TRIGGER_WORD=gordon_freeman
+SUBJECT_NAME=character
+max_train_steps=500
 num_ckpts=1
 
 # check training exist
-image_count=$(ls ./train_image/1_face/*.jpg 2>/dev/null | wc -l)
+image_count=$(ls ./train_image/1_$SUBJECT_NAME/*.jpg 2>/dev/null | wc -l)
 if [ "$image_count" -eq 0 ]; then
-    echo "Gen Faces."
-    python module/aug_gen_face.py "$GENDER"
+    echo "Gen subject."
+    python module/aug_gen_character.py "$TRIGGER_WORD"
 fi
 
-image_count=$(ls ./train_image/1_face/*.jpg 2>/dev/null | wc -l)
+image_count=$(ls ./train_image/1_$SUBJECT_NAME/*.jpg 2>/dev/null | wc -l)
 
-CONFIG_PATH=./config/face.json
+CONFIG_PATH=./config/$SUBJECT_NAME.json
 # 讀取JSON文件中的設置
 pretrained_model_name_or_path=$(jq -r '.pretrained_model_name_or_path' $CONFIG_PATH)
 logging_dir=$(jq -r '.logging_dir' $CONFIG_PATH)
@@ -145,7 +146,6 @@ else
 fi
 
 # remove down blocks weights
-cd -
-python module/remove_down_blocks_weights.py "$output_dir"
+# cd -
+# python module/remove_down_blocks_weights.py "$output_dir"
 
-# scp model/AutoTrainFace.safetensors pop:/home/jason/stable-diffusion-webui/models/Lora/ 

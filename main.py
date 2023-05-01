@@ -10,7 +10,7 @@ from google.cloud import pubsub_v1
 from google.oauth2 import service_account
 from google.cloud import storage
 from module.gen_example import gen_face_example
-from module.gen_face import gen_face
+from module.aug_gen_face import gen_face
 from module.train_lora import train
 from module.remove_down_blocks_weights import remove_face_weight
 from module.clean import clean_data
