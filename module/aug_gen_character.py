@@ -10,10 +10,10 @@ from tqdm import tqdm
 logger = logging.getLogger()
 
 TRIGGER_WORD = "sys"
-TARGET_SIZE = (512, 512)
+TARGET_SIZE = (512, 512)  # TODO resize problem
 
 
-def gen_aug(source_dir, target_dir, trigger_word=TRIGGER_WORD):
+def gen_aug(source_dir, target_dir, trigger_word):
     # create 1_character folder under target_dir
     subject_folder = os.path.join(target_dir, "1_character")
     if not os.path.exists(subject_folder):

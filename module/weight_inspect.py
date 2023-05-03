@@ -54,6 +54,9 @@ def write_mean_var_file(model_dir, output_dir):
             else:
                 file.write("avg nan\n")
                 file.write("var nan\n")
+            print(
+                f"Last layer of average variance for model '{model_file}': {results[1, -1]}"
+            )
 
 
 def calculate_weights_stats(model_file, prefix_keys):
