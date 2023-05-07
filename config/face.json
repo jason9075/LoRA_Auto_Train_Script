@@ -7,7 +7,7 @@
   "reg_data_dir": "",
   "max_train_steps": 750,
   "network_dim": 64,
-  "network_alpha": 4,
+  "network_alpha": 2,
   "resolution": "512,512",
   "unet_lr": "0.0015",
   "text_encoder_lr": "0.00075",
@@ -55,7 +55,7 @@
   "xformers": true,
   "mem_eff_attn": true,
   "v_parameterization": false,
-  "training_comment": "Auto-train-script-by-lotra.in",
+  "training_comment": "model_train_by_jason9075:https://www.notion.so/Stable-Diffusion-LoRA-2-3979da55283c4218869583b46c756df9",
   "seed": "9075",
   "v2": false
 }

@@ -11,6 +11,7 @@ logger = logging.getLogger()
 
 BACKGROUND_COLOR = (255, 255, 255)
 TARGET_SIZE = (512, 512)  # TODO resize problem
+REMOVE_TEXT = True
 
 
 def gen_style(source_dir, target_dir, trigger_word="my_art"):
@@ -34,6 +35,9 @@ def gen_style(source_dir, target_dir, trigger_word="my_art"):
             if max(h, w) < 1500:
                 break
             image = cv2.resize(image, (0, 0), fx=0.5, fy=0.5)
+
+        if REMOVE_TEXT:
+            image = image[:-60, :-60, :]
 
         image = cv2.resize(image, TARGET_SIZE)
         # gen description

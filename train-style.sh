@@ -1,12 +1,16 @@
 #!/bin/bash
 
+if [ -f .env ]; then
+  export $(grep -v '^#' .env | xargs)
+fi
+
 TRAIN_SCRIPT_PATH=~/projects/LoRA_Easy_Training_Scripts/sd_scripts/
 TRAIN_DATA_PATH=~/projects/LoRA_Auto_Train_Script
 SUBJECT_NAME=style
-MODEL_NAME="InkStyle"
-TRIGGER_WORD="ink_style"
+MODEL_NAME="OvergrownCity"
+TRIGGER_WORD="overgrown_city"
 CONFIG_PATH=./config/style.json
-train_batch_size=1
+train_batch_size=$BATCH_SIZE
 num_ckpts=1
 
 image_count=$(ls ./train_image/1_"$SUBJECT_NAME"/*.jpg 2>/dev/null | wc -l)
@@ -46,13 +50,15 @@ config_dict["log_prefix"]="$MODEL_NAME-"
 config_dict["network_module"]="networks.lora"
 config_dict["output_name"]="$MODEL_NAME"
 config_dict["train_batch_size"]="$train_batch_size"
+#divide max_train_steps by train_batch_size
+max_train_steps="${config_dict["max_train_steps"]}"
+max_train_steps=$((max_train_steps / train_batch_size))
+config_dict["max_train_steps"]=$max_train_steps
 # unset if save_every_n_epochs equal 1
 if [ "$num_ckpts" -eq 1 ]; then
     unset config_dict["save_every_n_epochs"]
 else
     image_count=$(ls ./train_image/1_$SUBJECT_NAME/*.jpg 2>/dev/null | wc -l)
-    max_train_steps="${config_dict["max_train_steps"]}"
-    max_train_steps=$((max_train_steps / train_batch_size))
     image_per_steps=$((image_count / train_batch_size))
     save_every_n_epochs=$((max_train_steps / image_per_steps / num_ckpts))
     config_dict["save_every_n_epochs"]="$save_every_n_epochs"
