@@ -22,24 +22,26 @@ train(){
     #splite $2 text to name and gender
     IFS='_' read -r MODEL_NAME GENDER <<< "$2"
 
-    # clean origin_image and train_image jpg png jpeg
+    # clean origin_image and train_image
     rm -rf $TRAIN_DATA_PATH/origin_image/*.jpg
+    rm -rf $TRAIN_DATA_PATH/origin_image/*.JPG
     rm -rf $TRAIN_DATA_PATH/origin_image/*.png
     rm -rf $TRAIN_DATA_PATH/origin_image/*.jpeg
-    rm -rf $TRAIN_DATA_PATH/train_image/1_face/*.jpg
-    rm -rf $TRAIN_DATA_PATH/train_image/1_face/*.png
-    rm -rf $TRAIN_DATA_PATH/train_image/1_face/*.jpeg
-    rm -rf $TRAIN_DATA_PATH/train_image/1_face/*.txt
+    rm -rf $TRAIN_DATA_PATH/origin_image/*.HEIC
+    rm -rf $TRAIN_DATA_PATH/train_image/1_face
 
     # cp folder_image to origin_image
     cp -r $1/*.jpg $TRAIN_DATA_PATH/origin_image/
+    cp -r $1/*.JPG $TRAIN_DATA_PATH/origin_image/
     cp -r $1/*.png $TRAIN_DATA_PATH/origin_image/
+    cp -r $1/*.HEIC $TRAIN_DATA_PATH/origin_image/
     cp -r $1/*.jpeg $TRAIN_DATA_PATH/origin_image/
 
     echo "Gen Faces."
     python module/aug_gen_face.py "$GENDER"
 
     image_count=$(ls ./train_image/1_face/*.jpg 2>/dev/null | wc -l)
+    printf "image_count: $image_count\n"
 
     # for loop json config file key and variable to bash dict
     declare -A config_dict
