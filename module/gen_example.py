@@ -48,7 +48,7 @@ def gen_face_example(lora_dir, meta_data, target_lora, img_output_dir, trigger_w
             [
                 "bash",
                 "-c",
-                f"cp {lora_dir}/{target_lora}.safetensors {SD_WEB_PATH}/models/Lora/",
+                f"cp {lora_dir}/{target_lora}.safetensors {SD_WEB_PATH}models/Lora/",
             ]
         )
 
