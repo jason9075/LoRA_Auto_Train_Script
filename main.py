@@ -63,7 +63,7 @@ def process_job(attr, msg_data):
     trigger_word = attr["trigger_word"]
     category = attr["category"]
     # deserialize json from msg_data
-    meta_data = json.loads(msg_data, encoding="utf-8")
+    meta_data = json.loads(msg_data)
 
     # handle config
     config = handle_config_file(model_name, category)
