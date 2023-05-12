@@ -83,7 +83,7 @@ def process_job(attr, msg_data):
         remove_face_weight(config["output_dir"])
 
     logger.info("5️⃣Write mean and var file.")
-    write_mean_var_file(config["output_dir"], config["log"])
+    write_mean_var_file(config["output_dir"], config["logging_dir"])
 
     logger.info("6️⃣Generate sample image.")
     if category == "face":

@@ -55,7 +55,7 @@ def read_metadata_from_safetensors(filename):
         return res
 
 
-def remove_face_weight(target_path, log_path="log"):
+def remove_face_weight(target_path):
     file_list = os.listdir(target_path)
     file_list = [f for f in file_list if f.endswith(".safetensors")]
 
